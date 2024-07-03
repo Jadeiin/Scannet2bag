@@ -1,6 +1,7 @@
 # -*- coding:UTF-8 -*-
 import cv2
 import time, sys, os
+from glob import glob
 from ros import rosbag
 import roslib
 import rospy
@@ -32,13 +33,10 @@ def ReadImages(filename):
 
 
 def ReadPose(filename):
-    file = open(filename,'r')
-    all = file.readlines()
     posedata = []
-    for f in all:
-        line = f.rstrip('\n').split(' ')
-        line = np.array(line).astype(float).reshape(4,4)
-        posedata.append(line)
+    for f in sorted(glob(filename+'/*')):
+        data = np.loadtxt(f)
+        posedata.append(data)
     return posedata
 
 
@@ -60,19 +58,19 @@ def CreateBag():#img,imu, bagname, timestamps
     imgs = ReadImages(root_dir+"frames/depth/")
     print("The length of images:",len(imgs))
     imagetimestamps=[]
-    # 返回一个列表，每个元素为一个4*4数组
-    posedata = ReadPose(root_dir+"traj.txt") #the url of  IMU data
+    # 返回一个列表，每个元素为一个 4*4 数组
+    posedata = ReadPose(root_dir+"frames/pose/") #the url of  IMU data
     print("The length of poses:",len(posedata))
-    # 帧率30
+    # 帧率 30
     imagetimestamps = np.linspace(0+1.0/30.0,(len(imgs))/30.0, len(imgs))
     # print(imagetimestamps)
-    # 所创建rosbag的目录和名称
+    # 所创建 rosbag 的目录和名称
     bag = rosbag.Bag("/media/dyn/DYN1/Research/dataset/iSDF/rosbag/scene_0004.bag", 'w')
 
     try:
         for i in range(len(posedata)):
 
-            '''posestamped消息'''
+            '''posestamped 消息'''
             # posestamped = PoseStamped()
             # pose = Pose()
             # pose_numpy = posedata[i]
@@ -96,10 +94,10 @@ def CreateBag():#img,imu, bagname, timestamps
             # posestamped.pose = pose
             # bag.write("/camera_pose",posestamped,poseStamp)
 
-            '''tf消息'''
+            '''tf 消息'''
             tf_oxts_msg = TFMessage()
-            tf_oxts_transform = TransformStamped() 
-            oxts_tf = Transform()           
+            tf_oxts_transform = TransformStamped()
+            oxts_tf = Transform()
             tf_oxts_transform.header.stamp = rospy.rostime.Time.from_sec(float(imagetimestamps[i]))
             tf_oxts_transform.header.frame_id = '/world'
             tf_oxts_transform.child_frame_id = '/camera'
